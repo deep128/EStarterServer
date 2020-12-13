@@ -73,7 +73,6 @@ router.post("/login",(req,res)=>{
     } else {
         //Check if username or email already registered
         UserModel.findOne({
-            attributes:["password"],
             where: {
                 [Op.or]: [
                     {email:{[Op.eq]: username}},
@@ -83,10 +82,34 @@ router.post("/login",(req,res)=>{
         }).then((value)=>{
             if(value === null) {
                 //No match found
-            } else {
                 res.status(401).json({
                     message:"Invalid username or password",
                     status: res.statusCode
+                })
+            } else {
+                const dbPassword = value.getDataValue("password")
+                bcrypt.compare(password,dbPassword,function(err,result) {
+                    if(result) {
+                        //if password is correct, sending web token
+                        const userDetail = {
+                            name: value.getDataValue("username"),
+                            id:value.getDataValue("id")
+                        }
+
+                        const token = jwt.sign(userDetail,process.env.secret_key,{expiresIn:"60s"})
+
+                        res.status(200).json({
+                            message:"Login success",
+                            status:res.statusCode,
+                            token
+                        })
+                    }
+                    else {
+                        res.status(401).json({
+                            message:"Invalid username or password2",
+                            status:res.statusCode
+                        })
+                    }
                 })
             }
         })
