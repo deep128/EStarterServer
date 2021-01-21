@@ -1,20 +1,22 @@
-const express = require("express")
-const bcrypt = require("bcrypt")
-const jwt = require("jsonwebtoken")
-const Op = require("sequelize").Op
-const router = express.Router()
+import express from "express"
+import bcrypt from "bcrypt"
+import jwt, { Secret } from "jsonwebtoken"
+import {Op} from "sequelize"
+import UserModel from "../Models/UserModel"
 
-const UserModel = require("../Models/UserModel")
+const router = express.Router()
 
 require("dotenv").config()
 
 //Register api
 
-router.post("/register",(req,res)=>{
-    const {username,password,email} = req.body
+router.post("/register",(req:any,res:any)=>{
+    const {username,password,email,firstname,lastname} = req.body
     if(username == undefined || username == ''
     || password == undefined || password == ''
-    || email == undefined || email == '') {
+    || email == undefined || email == ''
+    || firstname == undefined || firstname == ''
+    || lastname == undefined || lastname == '') {
         res.status(401).json({
             message:"Fill all fields",
             status:res.statusCode
@@ -32,19 +34,19 @@ router.post("/register",(req,res)=>{
                     {username: {[Op.eq]:username}}
                 ]
             }
-        }).then((value)=>{
+        }).then((value:any)=>{
             if(value === null) {
                 //No match found
-                bcrypt.genSalt(10, function(err,salt){
-                    bcrypt.hash(password,salt,(err,hash)=>{
+                bcrypt.genSalt(10, function(err:unknown,salt:string){
+                    bcrypt.hash(password,salt,(err:unknown,hash:string)=>{
                         UserModel.create({
-                            username,email,password:hash
-                        }).then((value)=>{
+                            firstname,lastname,username,email,password:hash
+                        }).then((value:unknown)=>{
                             res.status(201).json({
                                 message:"New account has been created",
                                 status:res.statusCode
                             })
-                        }).catch(err=>res.status(404).json({
+                        }).catch((err:unknown)=>res.status(404).json({
                             message:"Something went wrong",
                             status: res.statusCode
                         }))
@@ -62,7 +64,7 @@ router.post("/register",(req,res)=>{
 
 //login api
 
-router.post("/login",(req,res)=>{
+router.post("/login",(req:any,res:any)=>{
     const {username,password} = req.body
     if(username == undefined || username == ''
     || password == undefined || password == '') {
@@ -79,7 +81,7 @@ router.post("/login",(req,res)=>{
                     {username: {[Op.eq]:username}}
                 ]
             }
-        }).then((value)=>{
+        }).then((value:any)=>{
             if(value === null) {
                 //No match found
                 res.status(401).json({
@@ -88,7 +90,7 @@ router.post("/login",(req,res)=>{
                 })
             } else {
                 const dbPassword = value.getDataValue("password")
-                bcrypt.compare(password,dbPassword,function(err,result) {
+                bcrypt.compare(password,dbPassword,function(err:unknown,result:unknown) {
                     if(result) {
                         //if password is correct, sending web token
                         const userDetail = {
@@ -96,17 +98,27 @@ router.post("/login",(req,res)=>{
                             id:value.getDataValue("id")
                         }
 
-                        const token = jwt.sign(userDetail,process.env.secret_key,{expiresIn:"60s"})
+                        let token:string = ""
+                        if(typeof process.env.secret_key == 'string') {
+                            token = jwt.sign(userDetail,process.env.secret_key,{expiresIn:"60s"})
+                        }
 
-                        res.status(200).json({
-                            message:"Login success",
-                            status:res.statusCode,
-                            token
-                        })
+                        if(token.length > 0)
+                            res.status(200).json({
+                                message:"Login success",
+                                status:res.statusCode,
+                                token
+                            })
+                        else
+                            res.status(401).json({
+                                message:"Login failed",
+                                status:res.statusCode,
+                                token
+                            })
                     }
                     else {
                         res.status(401).json({
-                            message:"Invalid username or password2",
+                            message:"Invalid username or password",
                             status:res.statusCode
                         })
                     }

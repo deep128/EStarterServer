@@ -1,14 +1,12 @@
-const express = require("express")
-const bodyParser = require("body-parser")
-
-const dbConnection = require("./Connection/db")
-
-const path = require("path")
-const cors = require("cors")
+import express from "express"
+import bodyParser from "body-parser"
+import path from "path"
+import cors from "cors"
+import dbConnection from "./Connection/db"
 
 dbConnection.authenticate().then(()=>{
     console.log("DB Connection has been extablished!!!")
-}).catch((err)=>{
+}).catch((err:any)=>{
     console.log("Unable to connect db ",err)
 })
 
@@ -24,6 +22,6 @@ app.use(express.static(path.join(__dirname,"Public")))
 //api route
 app.use("/api/user",require("./api/user"))
 
-app.get("/*",(req,res)=>res.sendFile(path.join(__dirname,"Public/index.html")))
+app.get("/*",(req:any,res:any)=>res.sendFile(path.join(__dirname,"Public/index.html")))
 
-app.listen(process.eventNames.PORT || 3000, ()=> console.log("Server is UP !!!"))
+app.listen(process.env.EstarterPORT || 3000, ()=> console.log("Server is UP !!!"))
